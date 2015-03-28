@@ -7,7 +7,7 @@
  * refills may be done by drawing every Thing in the thingArrays, or by 
  * Quadrants as a form of dirty rectangles.
  * 
- * Examples are not available for MapsHandlr, as the required code would be very
+ * Examples are not available for PixelDrawr, as the required code would be very
  * substantial. Instead see GameStartr.js and its rendering code.
  * 
  * @author "Josh Goldberg" <josh@fullscreenmario.com>
@@ -25,7 +25,7 @@ function PixelDrawr(settings) {
         // A MapScreenr variable to be used for checking.
         MapScreener,
 
-        // The canvas element each Thing is to be drawn on.
+        // The main canvas element drawn upon.
         canvas,
 
         // The 2D canvas context associated with the canvas.
@@ -74,6 +74,7 @@ function PixelDrawr(settings) {
         keyRight,
         keyBottom,
         keyLeft,
+        keyGroup,
         keyOffsetX,
         keyOffsetY;
 
@@ -82,7 +83,7 @@ function PixelDrawr(settings) {
      * 
      * @constructor
      * @param {PixelRendr} PixelRender   The PixelRendr used for sprite lookups.
-     * @param {MapScreenr} MapScreener   The mapScreener used for screen 
+     * @param {MapScreenr} MapScreener   The MapScreener used for screen 
      *                                   boundary information.
      * @param {Function} createCanvas   A Function to create a canvas of a given
      *                                  size.
@@ -114,6 +115,8 @@ function PixelDrawr(settings) {
      *                               (by default, "bottom").
      * @param {String} [keyLeft]   The attribute name for a Thing's left (by
      *                             default, "left").
+     * @param {String} [keyGroup]   The attribute name for a Thing's group (by
+     *                              default, "group").
      * @param {String} [keyOffsetX]   An attribute name for a Thing's 
      *                                horizontal offset (if not given, 
      *                                ignored).
@@ -138,6 +141,7 @@ function PixelDrawr(settings) {
         keyRight = settings.keyRight || "right";
         keyBottom = settings.keyBottom || "bottom";
         keyLeft = settings.keyLeft || "left";
+        keyGroup = settings.keyGroup || "group";
         keyOffsetX = settings.keyOffsetX;
         keyOffsetY = settings.keyOffsetY;
 
@@ -167,7 +171,7 @@ function PixelDrawr(settings) {
     };
 
     /**
-     * @return {HTMLCanvasElement} The canvas element each Thing is to drawn on.
+     * @return {HTMLCanvasElement} The main canvas element drawn upon.
      */
     self.getCanvas = function () {
         return canvas;
@@ -175,7 +179,7 @@ function PixelDrawr(settings) {
 
     /**
      * @return {CanvasRenderingContext2D} The 2D canvas context associated with
-     *                                    the canvas.
+     *                                    the main canvas.
      */
     self.getContext = function () {
         return context;
@@ -441,51 +445,24 @@ function PixelDrawr(settings) {
                 && quadrant[keyLeft] < MapScreener[keyWidth]
             ) {
                 self.refillQuadrant(quadrant);
-                context.drawImage(
-                    quadrant.canvas,
-                    quadrant[keyLeft],
-                    quadrant[keyTop]
-                );
+                //context.drawImage(
+                //    quadrant.canvas,
+                //    quadrant[keyLeft],
+                //    quadrant[keyTop]
+                //);
             }
         }
     };
 
-    // var letters = '0123456789ABCDEF'.split('');
-    // function getRandomColor() {
-    // var color = '#';
-    // for (var i = 0; i < 6; i++ ) {
-    // color += letters[Math.floor(Math.random() * 16)];
-    // }
-    // return color;
-    // }
-
     /**
      * Refills a Quadrants's canvas by resetting its background and drawing all
-     * its Things onto it.
+     * its Things onto its canvases.
      * 
      * @param {Quadrant} quadrant   A quadrant whose Things must be drawn onto
-     *                              its canvas.
+     *                              its canvases.
      */
     self.refillQuadrant = function (quadrant) {
         var group, i, j;
-
-        // quadrant.context.fillStyle = getRandomColor();
-        // quadrant.context.fillRect(0, 0, quadrant.canvas[keyWidth], quadrant.canvas[keyHeight]);
-
-        // This may be what's causing such bad performance.
-        if (!noRefill) {
-            quadrant.context.drawImage(
-                backgroundCanvas,
-                quadrant[keyLeft],
-                quadrant[keyTop],
-                quadrant.canvas[keyWidth],
-                quadrant.canvas[keyHeight],
-                0,
-                0,
-                quadrant.canvas[keyWidth],
-                quadrant.canvas[keyHeight]
-            );
-        }
 
         for (i = groupNames.length - 1; i >= 0; i -= 1) {
             group = quadrant.things[groupNames[i]];
@@ -556,11 +533,23 @@ function PixelDrawr(settings) {
 
         // If there's just one sprite, it's pretty simple
         if (thing.numSprites === 1) {
-            return drawThingOnContextSingle(quadrant.context, thing.canvas, thing, getLeft(thing) - quadrant[keyLeft], getTop(thing) - quadrant[keyTop]);
+            return drawThingOnContextSingle(
+                quadrant.contexts[thing[keyGroup]],
+                thing.canvas,
+                thing,
+                getLeft(thing) - quadrant[keyLeft],
+                getTop(thing) - quadrant[keyTop]
+            );
         }
-            // For multiple sprites, some calculations will be needed
+        // For multiple sprites, some calculations will be needed
         else {
-            return drawThingOnContextMultiple(quadrant.context, thing.canvases, thing, getLeft(thing) - quadrant[keyLeft], getTop(thing) - quadrant[keyTop]);
+            return drawThingOnContextMultiple(
+                quadrant.contexts[thing[keyGroup]],
+                thing.canvases,
+                thing,
+                getLeft(thing) - quadrant[keyLeft],
+                getTop(thing) - quadrant[keyTop]
+            );
         }
     };
 

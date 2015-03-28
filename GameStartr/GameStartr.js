@@ -530,7 +530,7 @@ var GameStartr = (function (EightBittr) {
      * @param {Number} left
      * @remarks This is generally called by a QuadsKeepr during a screen update.
      */
-    function onAreaSpawn(EightBitter, direction, top, right, bottom, left) {
+    function onAreaSpawn(EightBitter, direction, top, right, bottom, left, quadrants) {
         EightBitter.MapsHandler.spawnMap(
             direction,
             (top + EightBitter.MapScreener.top) / EightBitter.unitsize,
@@ -538,6 +538,10 @@ var GameStartr = (function (EightBittr) {
             (bottom + EightBitter.MapScreener.top) / EightBitter.unitsize,
             (left + EightBitter.MapScreener.left) / EightBitter.unitsize
         );
+
+        quadrants.forEach(EightBitter.addQuadrantCanvases.bind(
+            EightBitter, EightBitter, EightBitter.settings.renderer.groupNames
+        ));
     }
 
     /**
@@ -552,7 +556,7 @@ var GameStartr = (function (EightBittr) {
      * @param {Number} left
      * @remarks This is generally called by a QuadsKeepr during a screen update.
      */
-    function onAreaUnspawn(EightBitter, direction, top, right, bottom, left) {
+    function onAreaUnspawn(EightBitter, direction, top, right, bottom, left, quadrants) {
         EightBitter.MapsHandler.unspawnMap(
             direction,
             (top + EightBitter.MapScreener.top) / EightBitter.unitsize,
@@ -560,6 +564,10 @@ var GameStartr = (function (EightBittr) {
             (bottom + EightBitter.MapScreener.top) / EightBitter.unitsize,
             (left + EightBitter.MapScreener.left) / EightBitter.unitsize
         );
+
+        quadrants.forEach(EightBitter.removeQuadrantCanvases.bind(
+            EightBitter, EightBitter
+        ));
     }
 
     /**
@@ -606,6 +614,28 @@ var GameStartr = (function (EightBittr) {
         thing.EightBitter.ModAttacher.fireEvent("onAddThing", thing, left, top);
 
         return thing;
+    }
+
+    /**
+     * 
+     */
+    function addQuadrantCanvases(EightBitter, groupNames, quadrant) {
+        var canvases = quadrant.canvases,
+            canvas, i;
+
+        //for (i = 0; i < groupNames.length; i += 1) {
+        for (i = groupNames.length - 1; i >= 0; i -= 1) {
+            canvas = canvases[groupNames[i]];
+
+            EightBitter.container.appendChild(canvas);
+        }
+    }
+
+    /**
+     * 
+     */
+    function removeQuadrantCanvases(EightBitter, quadrant) {
+
     }
 
     /**
@@ -1489,6 +1519,8 @@ var GameStartr = (function (EightBittr) {
         "scrollThing": scrollThing,
         "onAreaSpawn": onAreaSpawn,
         "onAreaUnspawn": onAreaUnspawn,
+        "addQuadrantCanvases": addQuadrantCanvases,
+        "removeQuadrantCanvases": removeQuadrantCanvases,
         "addThing": addThing,
         "thingProcess": thingProcess,
         "thingProcessAttributes": thingProcessAttributes,

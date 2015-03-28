@@ -399,11 +399,19 @@ function QuadsKeepr(settings) {
      * @param {Number} dy
      */
     function shiftQuadrant(quadrant, dx, dy) {
+        var canvas, i;
+
         quadrant.top += dy;
         quadrant.right += dx;
         quadrant.bottom += dy;
         quadrant.left += dx;
         quadrant.changed = true;
+
+        for (i = 0; i < groupNames.length; i += 1) {
+            canvas = quadrant.canvases[groupNames[i]];
+            canvas.style.left = quadrant.left + "px";
+            canvas.style.top = quadrant.top + "px";
+        }
     }
     
     
@@ -418,6 +426,7 @@ function QuadsKeepr(settings) {
     self.resetQuadrants = function () {
         var left = startLeft,
             top = startTop,
+            newQuadrants = [],
             quadrant,
             i, j;
         
@@ -449,14 +458,17 @@ function QuadsKeepr(settings) {
                 quadrant = createQuadrant(left, top);
                 quadrantRows[i].quadrants.push(quadrant);
                 quadrantCols[j].quadrants.push(quadrant);
+                newQuadrants.push(quadrant);
                 left += quadrantWidth;
             }
             top += quadrantHeight;
         }
         
         if (onAdd) {
-            onAdd("xInc", self.top, self.right, self.bottom, self.left);
+            onAdd("xInc", self.top, self.right, self.bottom, self.left, newQuadrants);
         }
+
+        return newQuadrants;
     };
     
     /**
@@ -469,7 +481,7 @@ function QuadsKeepr(settings) {
      */
     function createQuadrant(left, top) {
         var quadrant = ObjectMaker.make("Quadrant"),
-            groupName, i;
+            groupName, canvas, i;
         
         quadrant.changed = true;
         quadrant.things = {};
@@ -483,10 +495,15 @@ function QuadsKeepr(settings) {
             quadrant.things[groupName] = [];
             quadrant.numthings[groupName] = 0;
 
-            quadrant.canvases[groupName] = createCanvas(
-                quadrantWidth, quadrantHeight
-            );
-            quadrant.contexts[groupName] = quadrant.canvases[groupName].getContext("2d");
+            canvas = createCanvas(quadrantWidth, quadrantHeight);
+            quadrant.canvases[groupName] = canvas;
+            quadrant.contexts[groupName] = canvas.getContext("2d");
+
+            // TODO: Make generic / programmable?
+            canvas.style.position = "absolute";
+            canvas.style.left = quadrant.left + "px";
+            canvas.style.top = quadrant.top + "px";
+            canvas.className = groupNames[i];
         }
         
         quadrant.left = left;
@@ -590,7 +607,8 @@ function QuadsKeepr(settings) {
                 self.bottom, 
                 self.right, 
                 self.bottom - quadrantHeight, 
-                self.left
+                self.left,
+                row
             );
         }
         
@@ -622,7 +640,8 @@ function QuadsKeepr(settings) {
                 self.top,
                 self.right - offsetY, 
                 self.bottom, 
-                self.right - quadrantWidth - offsetY
+                self.right - quadrantWidth - offsetY,
+                col
             );
         }
         
@@ -636,12 +655,14 @@ function QuadsKeepr(settings) {
      *                               trigger with the new row's bounding box.
      */
     self.popQuadrantRow = function (callUpdate) {
-        for (var i = 0; i < quadrantCols.length; i += 1) {
+        var row, i;
+
+        for (i = 0; i < quadrantCols.length; i += 1) {
             quadrantCols[i].quadrants.pop();
         }
         
         numRows -= 1;
-        quadrantRows.pop();
+        row = quadrantRows.pop();
         
         if (callUpdate && onRemove) {
             onRemove(
@@ -649,11 +670,14 @@ function QuadsKeepr(settings) {
                 self.bottom, 
                 self.right, 
                 self.bottom - quadrantHeight, 
-                self.left
+                self.left,
+                row.quadrants
             );
         }
         
         self.bottom -= quadrantHeight;
+
+        return row;
     };
     
     /**
@@ -663,12 +687,14 @@ function QuadsKeepr(settings) {
      *                               trigger with the new row's bounding box.
      */
     self.popQuadrantCol = function (callUpdate) {
-        for (var i = 0; i < quadrantRows.length; i += 1) {
+        var col, i;
+
+        for (i = 0; i < quadrantRows.length; i += 1) {
             quadrantRows[i].quadrants.pop();
         }
         
         numCols -= 1;
-        quadrantCols.pop();
+        col = quadrantCols.pop();
         
         if (callUpdate && onRemove) {
             onRemove(
@@ -676,11 +702,14 @@ function QuadsKeepr(settings) {
                 self.top,
                 self.right - offsetY, 
                 self.bottom, 
-                self.right - quadrantWidth - offsetY
+                self.right - quadrantWidth - offsetY,
+                col.quadrants
             );
         }
         
         self.right -= quadrantWidth;
+
+        return col;
     };
     
     /**
@@ -708,7 +737,8 @@ function QuadsKeepr(settings) {
                 self.top,
                 self.right, 
                 self.top + quadrantHeight, 
-                self.left
+                self.left,
+                row.quadrants
             );
         }
         
@@ -740,7 +770,8 @@ function QuadsKeepr(settings) {
                 self.top,
                 self.left,
                 self.bottom, 
-                self.left + quadrantWidth
+                self.left + quadrantWidth,
+                col
             );
         }
         
@@ -754,12 +785,14 @@ function QuadsKeepr(settings) {
      *                               trigger with the new row's bounding box.
      */
     self.shiftQuadrantRow = function (callUpdate) {
-        for (var i = 0; i < quadrantCols.length; i += 1) {
+        var row, i;
+
+        for (i = 0; i < quadrantCols.length; i += 1) {
             quadrantCols[i].quadrants.shift();
         }
         
         numRows -= 1;
-        quadrantRows.pop();
+        row = quadrantRows.pop();
         
         if (callUpdate && onRemove) {
             onRemove(
@@ -767,11 +800,14 @@ function QuadsKeepr(settings) {
                 self.top,
                 self.right, 
                 self.top + quadrantHeight, 
-                self.left
+                self.left,
+                row
             );
         }
         
         self.top += quadrantHeight;
+
+        return row;
     };
     
     /**
@@ -781,7 +817,9 @@ function QuadsKeepr(settings) {
      *                               trigger with the new row's bounding box.
      */
     self.shiftQuadrantCol = function (callUpdate) {
-        for (var i = 0; i < quadrantRows.length; i += 1) {
+        var col, i;
+
+        for (i = 0; i < quadrantRows.length; i += 1) {
             quadrantRows[i].quadrants.shift();
         }
         
@@ -794,11 +832,14 @@ function QuadsKeepr(settings) {
                 self.top,
                 self.left + quadrantWidth,
                 self.bottom,
-                self.left
+                self.left,
+                col
             );
         }
         
         self.left += quadrantWidth;
+
+        return col;
     };
     
     
