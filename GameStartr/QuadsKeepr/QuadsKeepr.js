@@ -469,25 +469,30 @@ function QuadsKeepr(settings) {
      */
     function createQuadrant(left, top) {
         var quadrant = ObjectMaker.make("Quadrant"),
-            canvas = createCanvas(quadrantWidth, quadrantHeight),
-            i;
+            groupName, i;
         
         quadrant.changed = true;
         quadrant.things = {};
         quadrant.numthings = {};
+        quadrant.canvases = {};
+        quadrant.contexts = {};
         
         for (i = 0; i < groupNames.length; i += 1) {
-            quadrant.things[groupNames[i]] = [];
-            quadrant.numthings[groupNames[i]] = 0;
+            groupName = groupNames[i];
+
+            quadrant.things[groupName] = [];
+            quadrant.numthings[groupName] = 0;
+
+            quadrant.canvases[groupName] = createCanvas(
+                quadrantWidth, quadrantHeight
+            );
+            quadrant.contexts[groupName] = quadrant.canvases[groupName].getContext("2d");
         }
         
         quadrant.left = left;
         quadrant.top = top;
         quadrant.right = left + quadrantWidth;
         quadrant.bottom = top + quadrantHeight;
-        
-        quadrant.canvas = canvas;
-        quadrant.context = canvas.getContext("2d");
         
         return quadrant;
     }
